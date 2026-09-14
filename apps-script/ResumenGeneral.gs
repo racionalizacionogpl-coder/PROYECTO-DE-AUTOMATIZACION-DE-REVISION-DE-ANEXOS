@@ -420,6 +420,22 @@ function actualizarResumenGeneral() {
   }
   ss.setActiveSheet(hoja);
 
+  // Registro en el historial: protegido, como en los demás anexos. Se
+  // registra con la etiqueta 'Fase 1', la misma que ya usa el historial para
+  // el avance combinado de la fase.
+  if (typeof registrarRevision === 'function') {
+    try {
+      registrarRevision('Fase 1', resultado.total.general);
+    } catch (e) {
+      Logger.log('No se pudo registrar el avance del Resumen General (' + resultado.total.general +
+                 '%) en el historial: ' + e.message);
+    }
+  } else {
+    Logger.log('No se encontró la función registrarRevision(): el avance del Resumen General (' +
+               resultado.total.general + '%) no se registró. Falta el archivo HistorialRevisiones.gs ' +
+               'en el proyecto.');
+  }
+
   const mensaje = 'Resumen general actualizado.\n\n' + resultado.filas.length + ' facultad(es).\n' +
     (hojaA1 ? '' : 'No se encontró ' + CONFIG_GENERAL.HOJA_A1 + '.\n') +
     (hojaA3 ? '' : 'No se encontró ' + CONFIG_GENERAL.HOJA_A3 + '.\n') +
