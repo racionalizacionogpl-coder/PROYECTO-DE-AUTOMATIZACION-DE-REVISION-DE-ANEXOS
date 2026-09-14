@@ -160,7 +160,11 @@ function leerResumenPorFacultadRG_(valores, etiquetaSigla, etiquetaNombre, etiqu
     const fila = valores[f];
     const siglaCruda = (fila[colSigla] || '').toString().trim();
     const sigla = normalizarRG_(siglaCruda);
-    if (!sigla || sigla === 'TOTAL') continue;
+    // La fila TOTAL cierra la tabla. Debajo de ella el Anexo 1 agrega una
+    // LEYENDA a mano, con sus propios textos en la columna de la sigla: sin
+    // este corte, esos textos se leerían como si fueran facultades más.
+    if (sigla === 'TOTAL') break;
+    if (!sigla) continue;
 
     resultado.orden.push(sigla);
     resultado.porSigla[sigla] = {

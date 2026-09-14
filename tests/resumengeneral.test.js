@@ -127,6 +127,19 @@ bloque("Lectura de una hoja de resumen", function () {
       "FACULTAD", "NOMBRE", "AVANCE GENERAL DEL ANEXO 1").orden.length === 0);
   chequear("una hoja vacía no revienta",
     M.leerResumenPorFacultadRG_([], "FACULTAD", "NOMBRE", "AVANCE").orden.length === 0);
+
+  const conLeyenda = HOJA_A1.concat([
+    [],
+    ["LEYENDA", "", ""],
+    ["TIPOS DE PRODUCTO", "Se registran en la columna C del Anexo 1.", ""],
+    ["CONFORME", "Avance del 100 %.", ""]
+  ]);
+  const a1ConLeyenda = M.leerResumenPorFacultadRG_(conLeyenda, "FACULTAD", "NOMBRE", "AVANCE GENERAL DEL ANEXO 1");
+  chequear("la leyenda que el Anexo 1 agrega debajo de TOTAL no se lee como facultades",
+    a1ConLeyenda.orden.join(",") === "FM,FDCP,FLCH");
+  chequear("ni 'LEYENDA' ni sus bloques aparecen como sigla",
+    !a1ConLeyenda.porSigla["LEYENDA"] && !a1ConLeyenda.porSigla["TIPOS DE PRODUCTO"] &&
+    !a1ConLeyenda.porSigla["CONFORME"]);
 });
 
 bloque("Combinación 50/50", function () {
