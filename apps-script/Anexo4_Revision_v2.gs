@@ -474,6 +474,12 @@ function escribirHojaA4_(ss, nombre, encabezados, filas, severidades) {
     }
   }
   for (let c = 1; c <= ancho; c++) hoja.setColumnWidth(c, c <= 2 ? 140 : 260);
+  // `hoja.clear()` borra contenido y formato, pero NO el objeto Filter de la
+  // hoja: si quedó uno de una corrida anterior, createFilter() revienta con
+  // "No puedes crear un filtro en una hoja que ya tenga uno." Hay que quitarlo
+  // primero.
+  const filtroExistente = hoja.getFilter();
+  if (filtroExistente) filtroExistente.remove();
   if (cuerpo.length) hoja.getRange(1, 1, cuerpo.length + 1, ancho).createFilter();
   return hoja;
 }
