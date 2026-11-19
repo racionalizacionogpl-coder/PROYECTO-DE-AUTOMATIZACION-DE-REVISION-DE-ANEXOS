@@ -15,6 +15,7 @@ Auditoría automática de los anexos de inventario de productos y procesos de la
 ## Contenido
 
 ```
+apps-script/AutoAnexo1_v2.gs             Genera los códigos de producto PADRE_F##-P## (va en el Apps Script del Anexo 1)
 apps-script/HistorialRevisiones.gs       Historial de avances de los anexos
 apps-script/ResumenGeneral.gs            Combina el avance de A1 y A3 (menú "Actualizar resumen general")
 apps-script/ExportarJSON.gs              Exportación del tablero a JSON
@@ -64,6 +65,7 @@ node tests/anexo4.test.js
 node tests/historial.test.js
 node tests/resumengeneral.test.js
 node tests/proyecto.test.js
+node tests/autoanexo1.test.js
 ```
 
 `proyecto.test.js` comprueba que dos archivos del proyecto de Apps Script no
