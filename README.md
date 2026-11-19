@@ -15,6 +15,7 @@ Auditoría automática de los anexos de inventario de productos y procesos de la
 ## Contenido
 
 ```
+apps-script/Anexo3_Automatizacion_v1.gs  Herramientas del libro del Anexo 3 (menú ⚙️ Herramientas Anexo 3)
 apps-script/AutoAnexo1_v2.gs             Genera los códigos de producto PADRE_F##-P## (va en el Apps Script del Anexo 1)
 apps-script/HistorialRevisiones.gs       Historial de avances de los anexos
 apps-script/ResumenGeneral.gs            Combina el avance de A1 y A3 (menú "Actualizar resumen general")
@@ -48,6 +49,7 @@ reglas/ANEXO-3_reglas-v1.md              v1 (piloto FDCP), conservada como refer
 reglas/ANEXO-1_reglas-v19.md             Reglas vigentes del Anexo 1
 reglas/ANEXO-1_reglas-v16.md             Reglas previas
 docs/ANALISIS_reglas-vs-codigo.md        Comparación hoja de reglas vs. script
+docs/MAPA_DE_SCRIPTS.md                  Qué archivo va en el Apps Script de cada libro
 docs/CONTRA_OBSERVACIONES.md             Respuesta a cada contra observación
 tests/validadores.test.js                Pruebas de los validadores del Anexo 1 (Node)
 tests/anexo3.test.js                     Pruebas de los validadores del Anexo 3 (Node)
