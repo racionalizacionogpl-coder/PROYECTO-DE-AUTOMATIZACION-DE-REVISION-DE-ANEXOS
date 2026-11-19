@@ -59,6 +59,12 @@ const CONFIG_AUTO_A1 = {
    * sobre el Anexo 1: estas celdas son casi siempre encabezados sin datos.
    * Un producto con datos y uno de estos fondos se reporta como conflicto.
    */
+  /**
+   * Hoja del propio Anexo 1 donde se anota cada código de producto que cambia
+   * (anterior → nuevo). El Anexo 3 la lee para reconocer sus códigos viejos
+   * mientras no los actualice.
+   */
+  HOJA_EQUIVALENCIAS: 'EQUIVALENCIAS_CODIGOS',
   COLORES_DE_PROCESO: ['#3d85c6', '#c9daf8', '#efefef', '#f3f3f3',
                        '#2e75b6', '#bdd7ee', '#e2ecff']
 };
@@ -126,7 +132,7 @@ function codigoDeProductoAuto_(padre, sufijo, n) {
 function calcularCodigosAuto_(filas, fondos, sufijo, filaInicio) {
   const nuevaB = filas.map(function (f) { return [f[0]]; });
   const informe = { procesos: 0, productos: 0, cambiadas: 0, conflictos: [], sinPadre: [],
-                    procesosSinCodigo: [], notas: [], padreDistinto: [] };
+                    procesosSinCodigo: [], notas: [], padreDistinto: [], equivalencias: [] };
 
   let padre = null;
   let contador = 0;
@@ -180,8 +186,14 @@ function calcularCodigosAuto_(filas, fondos, sufijo, filaInicio) {
       }
     }
     const denominacion = texto.replace(REGEX_CODIGO_PRODUCTO_AUTO, '').trim().toUpperCase();
-    const nuevo = codigoDeProductoAuto_(padre, sufijo, contador) + ' ' + denominacion;
+    const codigoNuevo = codigoDeProductoAuto_(padre, sufijo, contador);
+    const nuevo = codigoNuevo + ' ' + denominacion;
     informe.productos++;
+    const anterior = texto.match(REGEX_CODIGO_PRODUCTO_AUTO);
+    const codigoAnterior = anterior ? anterior[0].replace(/[\s\-–:.]+$/, '').replace(/\s+/g, '').toUpperCase() : '';
+    if (codigoAnterior && codigoAnterior !== codigoNuevo) {
+      informe.equivalencias.push([filaHoja, codigoAnterior, codigoNuevo, denominacion]);
+    }
     if (nuevo !== original) { nuevaB[i][0] = nuevo; informe.cambiadas++; }
   }
   return { columnaB: nuevaB, informe: informe };
@@ -219,12 +231,14 @@ function generarCodigosHojaActual() {
   const r = calcularCodigosAuto_(datos, rangoB.getBackgrounds(), sufijo, CONFIG_AUTO_A1.FILA_INICIO);
 
   rangoB.setValues(r.columnaB);
+  registrarEquivalenciasAuto_(hoja.getParent(), nombre, r.informe.equivalencias);
 
   const inf = r.informe;
   let msg = '✅ ' + nombre + ' — sufijo ' + sufijo + '\n\n' +
             inf.procesos + ' procesos / subprocesos\n' +
             inf.productos + ' productos numerados\n' +
-            inf.cambiadas + ' celdas modificadas';
+            inf.cambiadas + ' celdas modificadas\n' +
+            inf.equivalencias.length + ' códigos anotados en la hoja ' + CONFIG_AUTO_A1.HOJA_EQUIVALENCIAS;
   if (inf.conflictos.length) {
     msg += '\n\n⚠️ Encabezados con datos de producto en C–I (se usaron como proceso padre, sin modificarlos; ' +
            'revisa si esos datos sobran): ' +
@@ -248,6 +262,25 @@ function generarCodigosHojaActual() {
            inf.notas.join(', ');
   }
   ui.alert(msg);
+}
+
+/**
+ * Agrega a EQUIVALENCIAS_CODIGOS una fila por código de producto que cambió.
+ * Las filas se acumulan: si una pestaña se renumera dos veces, el Anexo 3 sigue
+ * la cadena anterior → nuevo hasta el código vigente.
+ */
+function registrarEquivalenciasAuto_(libro, pestana, equivalencias) {
+  if (!equivalencias.length) return;
+  let hoja = libro.getSheetByName(CONFIG_AUTO_A1.HOJA_EQUIVALENCIAS);
+  if (!hoja) {
+    hoja = libro.insertSheet(CONFIG_AUTO_A1.HOJA_EQUIVALENCIAS);
+    hoja.getRange(1, 1, 1, 6).setValues([['FECHA', 'PESTAÑA', 'FILA', 'CÓDIGO ANTERIOR',
+                                          'CÓDIGO NUEVO', 'DENOMINACIÓN']]).setFontWeight('bold');
+    hoja.setFrozenRows(1);
+  }
+  const fecha = new Date();
+  const filas = equivalencias.map(function (e) { return [fecha, pestana].concat(e); });
+  hoja.getRange(hoja.getLastRow() + 1, 1, filas.length, 6).setValues(filas);
 }
 
 /** Pasa a MAYÚSCULAS el texto de la columna B desde la fila 5. */

@@ -13,7 +13,7 @@ const fs = require("fs");
 const os = require("os");
 const path = require("path");
 
-const FUENTE = path.join(__dirname, "..", "apps-script", "Anexo3_Revision_v3.gs");
+const FUENTE = path.join(__dirname, "..", "apps-script", "Anexo3_Revision_v4.gs");
 
 const SHIM = `
 var SpreadsheetApp = {
@@ -26,7 +26,7 @@ var Utilities = { formatDate: function () { return "2026-01-01 00:00"; } };
 var Session = { getScriptTimeZone: function () { return "America/Lima"; } };
 var Logger = { log: function () {} };
 module.exports = {
-  CONFIG_A3, normalizar_, esVacio_, esEtiqueta_, nivelDeCodigo_, extraerCodigosA3_,
+  CONFIG_A3, padreDeProductoA3_, buscarEnOtroFormato_, resolverEquivalenciaA3_, leerEquivalenciasA1_, normalizar_, esVacio_, esEtiqueta_, nivelDeCodigo_, extraerCodigosA3_,
   denominacionDeA3_, nivelesEsperados_, validarCodigoA3_, validarCeldaA3_,
   siglaDePestana_, facultadPorSigla_, formularioDominante_, esInicioDeFicha_,
   localizarFichas_, buscarFilaEtiqueta_, valorDeEtiqueta_, catalogoDeEtiquetas_,
@@ -968,6 +968,85 @@ bloque("Ubicación mostrada en la columna CELDA", function () {
 });
 
 /* ────────────────────────────────────────────────────────────────────────── */
+
+bloque("v4 — código de producto PADRE_F##-P##", function () {
+  chequear("barrido extrae el -P completo",
+    M.extraerCodigosA3_("PE.01.01_F18-P03 PLAN OPERATIVO").join() === "PE.01.01_F18-P03");
+  chequear("con espacios alrededor del guion",
+    M.extraerCodigosA3_("PE.01.01_F18 - P03 PLAN").join() === "PE.01.01_F18-P03");
+  chequear("un guion seguido de la denominación no se confunde con -P",
+    M.extraerCodigosA3_("PE.01.01_F18 - PLAN OPERATIVO").join() === "PE.01.01_F18");
+  chequear("la denominación queda limpia",
+    M.denominacionDeA3_("PE.01.01_F18-P03 PLAN OPERATIVO") === "PLAN OPERATIVO");
+
+  chequear("-P vale como el nivel del padre más uno", M.nivelDeCodigo_("PE.01.01_F18-P03") === 3);
+  chequear("salida -P bajo subproceso es válida",
+    M.validarCodigoA3_("PE.01.01_F18-P03", "SALIDA", "F18", false).ok);
+  chequear("registro -P bajo subproceso es válido",
+    M.validarCodigoA3_("PE.01.01_F18-P03", "REGISTRO", "F18", false).ok);
+  chequear("salida -P bajo nivel 2 es error en facultad de nivel 1",
+    !M.validarCodigoA3_("PE.01.01.01_F18-P01", "SALIDA", "F18", false).ok);
+  const n2 = M.validarCodigoA3_("PE.01.01.01_F18-P01", "SALIDA", "F18", true);
+  chequear("y válida como excepción en facultad de nivel 2", n2.ok && n2.excepcionNivel2);
+  chequear("producto colgado directo del nivel 0 es válido",
+    M.validarCodigoA3_("PS.10_F18-P01", "SALIDA", "F18", false).ok);
+  const enProceso = M.validarCodigoA3_("PE.01.01_F18-P01", "PROCESO_N2", "F18", false);
+  chequear("-P en el campo de procesos es error", !enProceso.ok && /es de un producto/.test(enProceso.motivo));
+  chequear("el sufijo ajeno se sigue detectando",
+    !M.validarCodigoA3_("PE.01.01_F02-P01", "SALIDA", "F18", false).ok);
+  chequear("el formato viejo sigue siendo válido",
+    M.validarCodigoA3_("PE.01.01.03_F18", "SALIDA", "F18", false).ok);
+
+  chequear("padre de un -P", M.padreDeProductoA3_("PM.01.03_F02-P05") === "PM.01.03");
+  chequear("padre de un código viejo", M.padreDeProductoA3_("PM.01.03.05_F02") === "PM.01.03");
+});
+
+bloque("v4 — cotejo con el Anexo 1 durante la renumeración", function () {
+  const catalogo = {
+    "PE.01.01_F18-P01": { denominacion: "PLAN ESTRATÉGICO DE LA FACULTAD", tipo: "Final" },
+    "PE.01.01_F18-P02": { denominacion: "PLAN OPERATIVO", tipo: "Final" },
+    "PE.01.02.01_F18":  { denominacion: "MANUAL DE PROCESOS", tipo: "Final" }
+  };
+  const a1 = { disponible: true, catalogo: catalogo };
+  const c = M.construirCotejo_([
+    { tipo: "Salida", codigo: "PE.01.01_F18-P01", denominacion: "PLAN ESTRATÉGICO DE LA FACULTAD", ficha: 1 },
+    { tipo: "Salida", codigo: "PE.01.01.02_F18", denominacion: "Plan operativo", ficha: 1 },
+    { tipo: "Salida", codigo: "PE.01.02_F18-P01", denominacion: "MANUAL DE PROCESOS", ficha: 2 },
+    { tipo: "Salida", codigo: "PE.01.03.01_F18", denominacion: "PLAN OPERATIVO", ficha: 3 },
+    { tipo: "Salida", codigo: "PE.01.01.09_F18", denominacion: "INEXISTENTE", ficha: 3 }
+  ], a1);
+  chequear("mismo código: Sí", c[0].existe === "Sí");
+  chequear("A3 viejo, A1 con -P: se encuentra en otro formato",
+    c[1].existe === "Sí (código en otro formato)" && /PE\.01\.01_F18-P02/.test(c[1].observacion));
+  chequear("A3 con -P, A1 viejo: también", c[2].existe === "Sí (código en otro formato)");
+  chequear("misma denominación pero otro padre: no se empareja", c[3].existe === "No");
+  chequear("producto inexistente: No", c[4].existe === "No");
+  chequear("buscarEnOtroFormato_ exige un solo candidato",
+    M.buscarEnOtroFormato_("PE.01.01.05_F18", "X", {
+      "PE.01.01_F18-P01": { denominacion: "X" }, "PE.01.01_F18-P02": { denominacion: "X" } }) === null);
+});
+
+bloque("v4 — equivalencias anterior → nuevo del Anexo 1", function () {
+  const libro = { getSheetByName: function () { return {
+    getLastRow: function () { return 4; },
+    getRange: function () { return { getValues: function () { return [
+      ["", "F01_FM", 30, "PE.02.02.05_F01", "PE.02.02_F01-P05", "X"],
+      ["", "F01_FM", 31, "PE.02.02_F01-P05", "PE.02.02_F01-P04", "X"],
+      ["", "F02_FDCP", 9, "PE.01.02.01_F02", "PE.01.02_F02-P01", "Y"]
+    ]; } }; } }; } };
+  const eq = M.leerEquivalenciasA1_(libro, "F01_FM");
+  chequear("solo lee las de su pestaña", Object.keys(eq).length === 2);
+  chequear("sigue la cadena hasta el código vigente",
+    M.resolverEquivalenciaA3_("PE.02.02.05_F01", eq) === "PE.02.02_F01-P04");
+  chequear("sin equivalencia devuelve null", M.resolverEquivalenciaA3_("PE.09_F01", eq) === null);
+
+  const c = M.construirCotejo_([
+    { tipo: "Salida", codigo: "PE.02.02.05_F01", denominacion: "", ficha: 1 }
+  ], { disponible: true, catalogo: { "PE.02.02_F01-P04": { denominacion: "INFORMES", tipo: "Final" } },
+       equivalencias: eq });
+  chequear("un código viejo sin denominación se encuentra por la equivalencia",
+    c[0].existe === "Sí (código en otro formato)" && /PE\.02\.02_F01-P04/.test(c[0].observacion));
+});
 
 console.log("\n" + total + " comprobaciones, " + fallas + " fallas.");
 process.exit(fallas ? 1 : 0);

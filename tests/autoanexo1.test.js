@@ -144,5 +144,19 @@ bloque("Casos que no se tocan y se reportan", function () {
     r.columnaB[4][0] === "** Plan estratégico 2026 - 2030 en validación");
 });
 
+bloque("Equivalencias anterior → nuevo para el Anexo 3", function () {
+  const r = correr([
+    ["PE.02.02_F18 SUBPROCESO", "", null, COLOR],
+    ["PE.02.02.05_F18 Informe de autoevaluación", "Final", prod, BLANCO],
+    ["Producto sin código", "Final", prod, BLANCO],
+    ["PE.02.02_F18-P03 YA NUMERADO", "Final", prod, BLANCO]
+  ]);
+  const eq = r.informe.equivalencias;
+  chequear("anota el código que cambia", eq.length === 1 &&
+    eq[0][1] === "PE.02.02.05_F18" && eq[0][2] === "PE.02.02_F18-P01" && eq[0][0] === 6);
+  chequear("no anota el que no tenía código ni el que no cambia",
+    eq.every(function (e) { return e[0] === 6; }));
+});
+
 console.log("\n" + total + " comprobaciones, " + fallas + " fallas.");
 process.exit(fallas ? 1 : 0);

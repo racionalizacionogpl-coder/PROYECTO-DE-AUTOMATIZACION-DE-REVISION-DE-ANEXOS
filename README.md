@@ -21,7 +21,8 @@ apps-script/ResumenGeneral.gs            Combina el avance de A1 y A3 (menú "Ac
 apps-script/ExportarJSON.gs              Exportación del tablero a JSON
 apps-script/Anexo4_Revision_v2.gs        Revisión del Anexo 4 — VERSIÓN VIGENTE
 apps-script/Anexo4_Revision_v1.gs        v1 (plantilla), conservada como referencia
-apps-script/Anexo3_Revision_v3.gs        Revisión del Anexo 3 — VERSIÓN VIGENTE
+apps-script/Anexo3_Revision_v4.gs        Revisión del Anexo 3 — VERSIÓN VIGENTE
+apps-script/Anexo3_Revision_v3.gs        v3, conservada como referencia
 apps-script/Anexo3_Revision_v2.gs        v2, conservada como referencia
 apps-script/Anexo3_Revision.gs           v1 (piloto FDCP), conservada como referencia
 apps-script/Anexo1_Auditoria_v19.gs      Auditor del Anexo 1 — VERSIÓN VIGENTE
@@ -42,7 +43,7 @@ apps-script/Anexo1_Auditoria_v5.gs       v5, conservada como referencia
 apps-script/Anexo1_Auditoria_v4.gs       v4, conservada como referencia
 apps-script/Anexo1_Auditoria_v3.gs       v3, conservada como referencia
 apps-script/Anexo1_Auditoria.gs          v2, conservada como referencia
-reglas/ANEXO-3_reglas-v2.md              Reglas vigentes del Anexo 3
+reglas/ANEXO-3_reglas-v3.md              Reglas vigentes del Anexo 3
 reglas/ANEXO-3_reglas-v1.md              v1 (piloto FDCP), conservada como referencia
 reglas/ANEXO-1_reglas-v19.md             Reglas vigentes del Anexo 1
 reglas/ANEXO-1_reglas-v16.md             Reglas previas
@@ -82,7 +83,7 @@ numeración posicional F01–F20 de la relación corregida—, puntuación de la
 de proceso, el avance general por proceso (no por criterio) y preservación de
 las columnas del revisor.
 
-Anexo 3: 292 comprobaciones sobre los validadores de codificación, la partición
+Anexo 3: 317 comprobaciones sobre los validadores de codificación, la partición
 de la pestaña en fichas técnicas, la excepción de las facultades de nivel 2, el
 registro maestro de códigos, el cotejo con el Anexo 1, la detección automática de
 las pestañas `F##_SIGLA`, el producto final obligatorio, el emparejado de código
@@ -109,7 +110,7 @@ observaciones ya escritas viajen con ella.
 ## Anexo 3 — revisión de fichas técnicas
 
 1. Abrir `4_REVISIÓN_INTERNA DE_AVANCES_ACTIVIDADES` → **Extensiones › Apps Script**
-2. Agregar un archivo con el contenido de `apps-script/Anexo3_Revision_v3.gs`
+2. Agregar un archivo con el contenido de `apps-script/Anexo3_Revision_v4.gs`
    (junto al del Anexo 1, en el mismo proyecto)
 3. Revisar el bloque `CONFIG_A3` del inicio (carpeta de salida y Anexo 1 para el
    cotejo). Las pestañas de facultad se detectan solas por su nombre
