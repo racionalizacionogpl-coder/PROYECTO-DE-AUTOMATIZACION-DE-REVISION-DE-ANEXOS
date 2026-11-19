@@ -37,7 +37,9 @@ activa. Menú **⚙️ Herramientas Anexo 3**.
 
 | Archivo | Qué hace |
 |---|---|
-| `Anexo3_Automatizacion_v1.gs` | Importa subprocesos (F–G), productos finales (H–I) y parciales (Registros) desde el Anexo 1; codifica PR, EN y BE al escribir (`onEdit`); da formato a la ficha |
+| `Anexo3_Automatizacion_v2.gs` | Importa subprocesos (F–G), productos finales (H–I) y parciales (Registros) desde el Anexo 1; con nivel 2, F lleva el nivel 1 y G cada nivel 2 con sus productos; acepta el código `-P##`; codifica PR, EN y BE al escribir (`onEdit`); da formato a la ficha |
+
+`Anexo3_Automatizacion_v1.gs` es la versión que estaba pegada antes de la v2, conservada como referencia.
 
 **Archivo a retirar de este proyecto:** la copia de la *revisión* del Anexo 3
 que está pegada aquí ("Revisión A3") es la v2 del 28 de agosto (commit
