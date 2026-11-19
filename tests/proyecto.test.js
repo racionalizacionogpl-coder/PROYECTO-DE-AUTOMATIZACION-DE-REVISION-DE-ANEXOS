@@ -22,7 +22,7 @@ const DIRECTORIO = path.join(__dirname, "..", "apps-script");
 
 /** Archivos que el proyecto de Apps Script tiene pegados a la vez. */
 const DEL_PROYECTO = [
-  "Anexo1_Auditoria_v17.gs",
+  "Anexo1_Auditoria_v18.gs",
   "Anexo3_Revision_v3.gs",
   "Anexo4_Revision_v2.gs",
   "ExportarJSON.gs",

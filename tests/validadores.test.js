@@ -13,7 +13,7 @@ const fs = require("fs");
 const os = require("os");
 const path = require("path");
 
-const FUENTE = path.join(__dirname, "..", "apps-script", "Anexo1_Auditoria_v17.gs");
+const FUENTE = path.join(__dirname, "..", "apps-script", "Anexo1_Auditoria_v18.gs");
 
 const SHIM = `
 var SpreadsheetApp = { getUi: function () { throw new Error("sin interfaz"); },
@@ -70,7 +70,10 @@ bloque("Columna D — Acción Estratégica", function () {
     "AE 04.01 Simplificación administrativa",
     "AE.02.02: Programa de fortalecimiento",
     "AE 01.01Actualización continua para la formación",
-    "AE-01-02 Difusión del conocimiento"
+    "AE-01-02 Difusión del conocimiento",
+    // [C44] Sigla del PEI, tal como la registran hoy las facultades.
+    "AEI.04.02 Simplificación administrativa implementada para la comunidad universitaria.",
+    "AEI.01.02 Enseñanza académica en programas de estudio acreditados"
   ];
   validos.forEach(function (v) {
     chequear("acepta " + JSON.stringify(v), M.validarAccionEstrategica_(v).ok);
@@ -81,7 +84,9 @@ bloque("Columna D — Acción Estratégica", function () {
     ["NINGUNO", "marcador de vacío"],
     ["AE.04.02", "código sin descripción"],
     ["AE.02", "numeración de un solo nivel"],
-    ["AEI.04.03 Gestión por Procesos", "sigla AEI"],
+    ["AEI.04.03", "AEI sin descripción"],
+    ["AEI.04", "AEI de un solo nivel"],
+    ["AOI00008801072 - GESTIÓN DEL PLANEAMIENTO", "código AOI en la columna D"],
     ["OE.02", "objetivo en vez de acción"],
     ["AS.06.01", "sigla AS"],
     ["AM.01.01", "sigla AM"],
@@ -93,10 +98,11 @@ bloque("Columna D — Acción Estratégica", function () {
 });
 
 bloque("Columna D — el diagnóstico explica el error", function () {
-  const aei = M.validarAccionEstrategica_("AEI.04.03 Gestión por Procesos").obs;
-  chequear("AEI indica que la sigla correcta es AE", /sigla "AE"/.test(aei));
-  chequear("AEI advierte que no basta con quitar la I", /NO basta con eliminar/.test(aei));
-  chequear("AEI da la evidencia de la discrepancia", /Simplificación administrativa/.test(aei));
+  const aei = M.validarAccionEstrategica_("AEI.04.03").obs;
+  chequear("AEI sin descripción pide el texto de la acción", /omite la descripción/.test(aei));
+  chequear("el formato exigido menciona AE y AEI", /AE\.##\.## o AEI\.##\.##/.test(aei));
+  chequear("AOI en la columna D se manda a la columna E",
+    /COLUMNA E/i.test(M.validarAccionEstrategica_("AOI00008801072 GESTIÓN").obs));
 
   const oe = M.validarAccionEstrategica_("OE.02").obs;
   chequear("OE explica el nivel jerárquico", /Objetivo Estratégico/.test(oe));
@@ -119,6 +125,23 @@ bloque("Columna E — Actividad Operativa (contra observación: solo exige texto
   chequear("rechaza vacía", !M.validarActividadOperativa_("").ok);
   chequear("rechaza una AE mal ubicada", !M.validarActividadOperativa_("AE.01.02 algo").ok);
   chequear("rechaza un texto de dos caracteres", !M.validarActividadOperativa_("ok").ok);
+  chequear("rechaza una AEI mal ubicada", !M.validarActividadOperativa_("AEI.01.02 algo").ok);
+});
+
+bloque("Columna E — código AOI de la Actividad Operativa [C44]", function () {
+  chequear("acepta AOI con guion",
+    M.validarActividadOperativa_("AOI00008801072 - GESTIÓN DEL PLANEAMIENTO INSTITUCIONAL Y PRESUPUESTO").ok);
+  chequear("acepta AOI sin guion",
+    M.validarActividadOperativa_("AOI00008800304 GESTIÓN ADMINISTRATIVA PARA SOPORTE").ok);
+  chequear("sigue aceptando texto libre sin código",
+    M.validarActividadOperativa_("EJECUCIÓN DE ACTIVIDADES DE MOVILIDAD DOCENTE").ok);
+
+  const sinTexto = M.validarActividadOperativa_("AOI00008801072");
+  chequear("rechaza el código sin descripción", !sinTexto.ok && /omite su descripción/.test(sinTexto.obs));
+  const corto = M.validarActividadOperativa_("AOI0000880107 - GESTIÓN");
+  chequear("rechaza un código con 10 dígitos", !corto.ok && /tiene 10 dígitos/.test(corto.obs));
+  chequear("rechaza un código con 12 dígitos",
+    !M.validarActividadOperativa_("AOI000088010720 - GESTIÓN").ok);
 });
 
 bloque("Columnas C, F, G, H, I", function () {
@@ -708,7 +731,7 @@ bloque("Avance sobre criterios cumplidos", function () {
 bloque("Prefijo de las observaciones (contra observación de la FFB)", function () {
   const muestras = [
     M.validarAccionEstrategica_("").obs,
-    M.validarAccionEstrategica_("AEI.04.03 x").obs,
+    M.validarAccionEstrategica_("AEI.04.03").obs,
     M.validarActividadOperativa_("").obs,
     M.validarTipoProducto_("").obs,
     M.validarListaCerrada_("", M.CONFIG_A1.TIPOS_ENTREGABLE, "Columna F", "Clasificación").obs,
