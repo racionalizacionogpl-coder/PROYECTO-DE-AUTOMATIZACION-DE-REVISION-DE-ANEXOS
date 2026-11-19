@@ -29,7 +29,8 @@
  *       las celdas…)".)
  *
  *     con datos, celda blanca o resaltada        → producto
- *     con datos, color de PROCESO de la plantilla → CONFLICTO: no se toca
+ *     con datos, color de PROCESO de la plantilla → CONFLICTO: no se toca, pero
+ *                                                   es el padre de lo que sigue
  *     sin datos, con código y con color          → proceso / subproceso
  *     sin datos, con código y blanca             → producto aún sin llenar
  *     sin datos y sin código                     → nota: no se toca
@@ -142,7 +143,11 @@ function calcularCodigosAuto_(filas, fondos, sufijo, filaInicio) {
     const m = texto.match(REGEX_PROCESO_AUTO);
 
     if (conDatos && CONFIG_AUTO_A1.COLORES_DE_PROCESO.indexOf(fondo) !== -1) {
+      // Encabezado con datos de producto: no se modifica, pero sigue siendo el
+      // padre de los productos que vienen debajo. Si se lo saltara, esos
+      // productos quedarían colgando del proceso anterior.
       informe.conflictos.push(filaHoja);
+      if (m) { padre = m[1].toUpperCase(); contador = 0; }
       continue;
     }
 
@@ -221,7 +226,8 @@ function generarCodigosHojaActual() {
             inf.productos + ' productos numerados\n' +
             inf.cambiadas + ' celdas modificadas';
   if (inf.conflictos.length) {
-    msg += '\n\n⚠️ Sin tocar — la celda tiene el color de un encabezado de proceso pero datos de producto ' +
+    msg += '\n\n⚠️ Encabezados con datos de producto en C–I (se usaron como proceso padre, sin modificarlos; ' +
+           'revisa si esos datos sobran): ' +
            '(revísalas y corrige el color o los datos): filas ' + inf.conflictos.join(', ');
   }
   if (inf.sinPadre.length) {

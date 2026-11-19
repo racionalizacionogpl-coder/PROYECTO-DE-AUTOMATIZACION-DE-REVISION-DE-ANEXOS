@@ -131,6 +131,13 @@ bloque("Casos que no se tocan y se reportan", function () {
   chequear("producto sin padre: fila 5", r.informe.sinPadre.join() === "5");
   chequear("color de proceso con datos de producto: fila 6", r.informe.conflictos.join() === "6");
   chequear("y esa fila no se modifica", r.columnaB[1][0] === "PE.01_F18 GESTIÓN ESTRATÉGICA");
+  const sigue = correr([
+    ["PE.01_F18 GESTIÓN ESTRATÉGICA", "", null, COLOR],
+    ["PE.01.01_F18 PLANIFICACIÓN", "Final", prod, COLOR],
+    ["PE.01.01.01_F18 Plan", "Final", prod, BLANCO]
+  ]);
+  chequear("pero sigue siendo el padre de los productos de abajo",
+    sigue.columnaB[2][0] === "PE.01.01_F18-P01 PLAN");
   chequear("proceso sin código: fila 7", r.informe.procesosSinCodigo.join() === "7");
   chequear("la catalogación no se toca", r.columnaB[3][0] === "PROCESOS MISIONALES");
   chequear("una nota suelta no recibe código", r.informe.notas.join() === "9" &&

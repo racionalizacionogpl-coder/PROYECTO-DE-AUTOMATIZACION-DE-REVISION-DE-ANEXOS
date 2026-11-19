@@ -13,7 +13,7 @@ const fs = require("fs");
 const os = require("os");
 const path = require("path");
 
-const FUENTE = path.join(__dirname, "..", "apps-script", "Anexo1_Auditoria_v18.gs");
+const FUENTE = path.join(__dirname, "..", "apps-script", "Anexo1_Auditoria_v19.gs");
 
 const SHIM = `
 var SpreadsheetApp = { getUi: function () { throw new Error("sin interfaz"); },
@@ -32,7 +32,7 @@ module.exports = {
   TOTAL_CRITERIOS, TOTAL_CRITERIOS_PROCESO, celdaFormulario_, avanceSobreCriterios_, estadoGeneral_,
   esCatalogacion_, abrePorProceso_, unirObservaciones_, SEPARADOR_OBS,
   ordenarPorFacultadYEstado_, avanceCombinado_, avancePorProceso_, filaDeTotales_,
-  avanceGeneralAnexo1_, calcularPorcentajeGeneralAnexo1_
+  avanceGeneralAnexo1_, calcularPorcentajeGeneralAnexo1_, procesarFacultad_
 };
 `;
 
@@ -1179,6 +1179,69 @@ bloque("[C43] Avance general para el historial de revisiones", function () {
     M.avanceGeneralAnexo1_([{ avanceGeneral: 100 }, {}]) === 50);
   chequear("el nombre anterior sigue funcionando",
     M.calcularPorcentajeGeneralAnexo1_(metricas) === 60);
+});
+
+bloque("[C45] Código de producto PADRE_F##-P##", function () {
+  const c = M.extraerCodigos_("PE.01.01_F18-P03 PLAN OPERATIVO");
+  chequear("extrae un solo código", c.length === 1);
+  chequear("su base es la del padre", c[0].base === "PE.01.01");
+  chequear("y el número de producto es 3", c[0].producto === 3);
+  chequear("el código completo incluye -P03", c[0].completo === "PE.01.01_F18-P03");
+  chequear("la denominación queda limpia",
+    M.denominacionDe_("PE.01.01_F18-P03 PLAN OPERATIVO", c) === "PLAN OPERATIVO");
+  chequear("el formato viejo no trae número de producto",
+    M.extraerCodigos_("PE.01.01.03_F18 PLAN")[0].producto === null);
+  chequear("el sufijo de formulario se lee antes del -P", M.sufijoDe_("PE.01.01_F18-P03") === "F18");
+  chequear("acepta -P con espacios", M.extraerCodigos_("PE.01.01_F18 - P07 X")[0].producto === 7);
+
+  const nadieEsPadre = function () { return false; };
+  const prod = M.clasificarFila_("PE.01.01_F18-P01 PLAN ESTRATÉGICO", nadieEsPadre, "F18");
+  chequear("-P## es producto", prod.tipo === "producto");
+  chequear("con su base y número", prod.base === "PE.01.01" && prod.numeroProducto === 1);
+  chequear("aunque se llame PROCESO… sigue siendo producto",
+    M.clasificarFila_("PE.03.03_F18-P05 PROCESO DE CONVALIDACIÓN", nadieEsPadre, "F18").tipo === "producto");
+  chequear("un producto colgando del nivel 0 no se confunde con el nivel 0",
+    M.clasificarFila_("PS.10_F18-P01 GESTIÓN DE LA COMUNICACIÓN", nadieEsPadre, "F18").tipo === "producto");
+  chequear("el sufijo del producto -P se valida como cualquier otro",
+    !M.clasificarFila_("PE.01.01_F02-P01 PLAN", nadieEsPadre, "F18").checks.sufijo);
+
+  chequear("con EXIGIR_FORMATO_P en false se aceptan ambos formatos",
+    M.CONFIG_A1.EXIGIR_FORMATO_P === false &&
+    M.validarCodigo_(M.clasificarFila_("PE.01.01.01_F18 PLAN", nadieEsPadre, "F18")).ok &&
+    M.validarCodigo_(prod).ok);
+  M.CONFIG_A1.EXIGIR_FORMATO_P = true;
+  const viejo = M.validarCodigo_(M.clasificarFila_("PE.01.01.01_F18 PLAN", nadieEsPadre, "F18"));
+  chequear("con EXIGIR_FORMATO_P en true el formato viejo se observa",
+    !viejo.ok && /-P y su número/.test(viejo.obs));
+  chequear("y el nuevo sigue siendo válido", M.validarCodigo_(prod).ok);
+  M.CONFIG_A1.EXIGIR_FORMATO_P = false;
+});
+
+bloque("[C45] Hoja completa con productos -P##", function () {
+  const prod = ["Final / Salida (Documento)", "AE.01.01 Planeamiento", "Gestión del planeamiento",
+                "Regulación", "Calidad", "Claridad", "solucionar un problema público"];
+  const filas = [
+    ["PE.01_F18 GESTIÓN ESTRATÉGICA"],
+    ["PE.01.01_F18 GESTIÓN DEL PLANEAMIENTO"],
+    ["PE.01.01_F18-P01 PLAN ESTRATÉGICO"].concat(prod),
+    ["PE.01.01_F18-P02 PLAN OPERATIVO"].concat(prod),
+    ["PE.01.01_F18-P02 PLAN OPERATIVO REPETIDO"].concat(prod),
+    ["PE.01.09_F18-P01 PRODUCTO SIN PADRE"].concat(prod)
+  ].map(function (f) { while (f.length < 8) f.push(""); return f; });
+  const hoja = { getLastRow: function () { return 4 + filas.length; },
+                 getRange: function () { return { getValues: function () { return filas; } }; } };
+  const fac = M.CONFIG_A1.FACULTADES.filter(function (f) { return f.sigla === "FPSIC"; })[0];
+  const r = M.procesarFacultad_(hoja, fac);
+  const obsDe = function (fila) {
+    return String(r.detalleFilas.filter(function (d) { return d[1] === fila; })[0].slice(-1)[0]);
+  };
+  chequear("cuenta 4 productos", r.detalleFilas.length === 4);
+  chequear("el subproceso con productos -P sigue siendo subproceso",
+    r.procesoFilas.some(function (p) { return /^PE\.01\.01_F18/.test(p[1]) && p[3] === "Subproceso"; }));
+  chequear("P01 sin observaciones de código", !/Columna B/.test(obsDe(7)));
+  chequear("el -P02 repetido se observa en sus dos filas",
+    /REPETIDO/.test(obsDe(8)) && /REPETIDO/.test(obsDe(9)));
+  chequear("el producto cuyo padre no existe se observa", /PE\.01\.09 no está registrado/.test(obsDe(10)));
 });
 
 /* ────────────────────────────────────────────────────────────────────────── */
